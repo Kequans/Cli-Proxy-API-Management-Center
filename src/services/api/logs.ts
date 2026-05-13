@@ -21,8 +21,18 @@ export interface ErrorLogFile {
   modified?: number;
 }
 
+export interface DetailedLogFile {
+  name: string;
+  size?: number;
+  modified?: number;
+}
+
 export interface ErrorLogsResponse {
   files?: ErrorLogFile[];
+}
+
+export interface DetailedLogsResponse {
+  files?: DetailedLogFile[];
 }
 
 export const logsApi = {
@@ -34,8 +44,17 @@ export const logsApi = {
   fetchErrorLogs: (): Promise<ErrorLogsResponse> =>
     apiClient.get('/request-error-logs', { timeout: LOGS_TIMEOUT_MS }),
 
+  fetchDetailedLogs: (): Promise<DetailedLogsResponse> =>
+    apiClient.get('/detailed-request-logs', { timeout: LOGS_TIMEOUT_MS }),
+
   downloadErrorLog: (filename: string) =>
     apiClient.getRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
+      responseType: 'blob',
+      timeout: LOGS_TIMEOUT_MS
+    }),
+
+  downloadDetailedLog: (filename: string) =>
+    apiClient.getRaw(`/detailed-request-logs/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
       timeout: LOGS_TIMEOUT_MS
     }),

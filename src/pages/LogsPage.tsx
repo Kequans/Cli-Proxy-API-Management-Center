@@ -23,7 +23,11 @@ import {
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { logsApi } from '@/services/api/logs';
+import {
+  logsApi,
+  type DetailedLogFile as DetailedLogListItem,
+  type ErrorLogFile as ErrorLogListItem,
+} from '@/services/api/logs';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
@@ -39,10 +43,9 @@ import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
 import styles from './LogsPage.module.scss';
 
-interface ErrorLogItem {
+interface DetailedLogPreviewState {
   name: string;
-  size?: number;
-  modified?: number;
+  content: string;
 }
 
 // 初始只渲染最近 100 行，滚动到顶部再逐步加载更多（避免一次性渲染过多导致卡顿）
@@ -61,7 +64,7 @@ const getErrorMessage = (err: unknown): string => {
   return typeof message === 'string' ? message : '';
 };
 
-type TabType = 'logs' | 'errors';
+type TabType = 'logs' | 'errors' | 'detailed';
 
 export function LogsPage() {
   const { t } = useTranslation();
@@ -69,6 +72,9 @@ export function LogsPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
+  const detailedRequestLogEnabled = Boolean(
+    config?.raw?.['detailed-request-log'] ?? config?.raw?.detailedRequestLog ?? false
+  );
 
   const [activeTab, setActiveTab] = useState<TabType>('logs');
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
@@ -86,9 +92,14 @@ export function LogsPage() {
     'logsPage.structuredFiltersExpanded',
     true
   );
-  const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
+  const [errorLogs, setErrorLogs] = useState<ErrorLogListItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
+  const [detailedLogs, setDetailedLogs] = useState<DetailedLogListItem[]>([]);
+  const [loadingDetailedLogs, setLoadingDetailedLogs] = useState(false);
+  const [detailedLogsError, setDetailedLogsError] = useState('');
+  const [detailedLogPreview, setDetailedLogPreview] = useState<DetailedLogPreviewState | null>(null);
+  const [detailedLogPreviewLoading, setDetailedLogPreviewLoading] = useState(false);
   const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
 
@@ -254,6 +265,71 @@ export function LogsPage() {
     }
   };
 
+  const loadDetailedLogs = async () => {
+    if (connectionStatus !== 'connected') {
+      setLoadingDetailedLogs(false);
+      return;
+    }
+
+    setLoadingDetailedLogs(true);
+    setDetailedLogsError('');
+    try {
+      const res = await logsApi.fetchDetailedLogs();
+      setDetailedLogs(Array.isArray(res.files) ? res.files : []);
+    } catch (err: unknown) {
+      console.error('Failed to load detailed logs:', err);
+      setDetailedLogs([]);
+      const message = getErrorMessage(err);
+      setDetailedLogsError(
+        message
+          ? `${t('logs.detailed_logs_load_error')}: ${message}`
+          : t('logs.detailed_logs_load_error')
+      );
+    } finally {
+      setLoadingDetailedLogs(false);
+    }
+  };
+
+  const downloadDetailedLog = async (name: string) => {
+    try {
+      const response = await logsApi.downloadDetailedLog(name);
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+      downloadBlob({ filename: name, blob });
+      showNotification(t('logs.detailed_log_download_success'), 'success');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    }
+  };
+
+  const previewDetailedLog = async (name: string) => {
+    setDetailedLogPreview({ name, content: '' });
+    setDetailedLogPreviewLoading(true);
+    try {
+      const response = await logsApi.downloadDetailedLog(name);
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+      const content = await blob.text();
+      setDetailedLogPreview({ name, content });
+    } catch (err: unknown) {
+      setDetailedLogPreview(null);
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('logs.detailed_logs_preview_error')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setDetailedLogPreviewLoading(false);
+    }
+  };
+
+  const closeDetailedLogPreview = () => {
+    if (detailedLogPreviewLoading) return;
+    setDetailedLogPreview(null);
+  };
+
   useEffect(() => {
     if (connectionStatus === 'connected') {
       latestTimestampRef.current = 0;
@@ -268,6 +344,13 @@ export function LogsPage() {
     void loadErrorLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, connectionStatus, requestLogEnabled]);
+
+  useEffect(() => {
+    if (activeTab !== 'detailed') return;
+    if (connectionStatus !== 'connected') return;
+    void loadDetailedLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, connectionStatus, detailedRequestLogEnabled]);
 
   useEffect(() => {
     if (!autoRefresh || connectionStatus !== 'connected') {
@@ -468,6 +551,13 @@ export function LogsPage() {
           onClick={() => setActiveTab('errors')}
         >
           {t('logs.error_logs_modal_title')}
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${activeTab === 'detailed' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('detailed')}
+        >
+          {t('logs.detailed_logs_title')}
         </button>
       </div>
 
@@ -893,6 +983,74 @@ export function LogsPage() {
             </div>
           </Card>
         )}
+
+        {activeTab === 'detailed' && (
+          <Card
+            extra={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={loadDetailedLogs}
+                loading={loadingDetailedLogs}
+                disabled={disableControls}
+              >
+                {t('common.refresh')}
+              </Button>
+            }
+          >
+            <div className="stack">
+              <div className="hint">{t('logs.detailed_logs_description')}</div>
+
+              {!detailedRequestLogEnabled && connectionStatus === 'connected' && (
+                <div>
+                  <div className="status-badge warning">{t('logs.detailed_logs_disabled')}</div>
+                </div>
+              )}
+
+              {detailedLogsError && <div className="error-box">{detailedLogsError}</div>}
+
+              <div className={styles.errorPanel}>
+                {loadingDetailedLogs ? (
+                  <div className="hint">{t('common.loading')}</div>
+                ) : detailedLogs.length === 0 ? (
+                  <div className="hint">{t('logs.detailed_logs_empty')}</div>
+                ) : (
+                  <div className="item-list">
+                    {detailedLogs.map((item) => (
+                      <div key={item.name} className="item-row">
+                        <div className="item-meta">
+                          <div className="item-title">{item.name}</div>
+                          <div className="item-subtitle">
+                            {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                            {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                          </div>
+                        </div>
+                        <div className="item-actions">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void previewDetailedLog(item.name)}
+                            disabled={disableControls}
+                          >
+                            {t('logs.detailed_logs_preview')}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void downloadDetailedLog(item.name)}
+                            disabled={disableControls}
+                          >
+                            {t('logs.detailed_logs_download')}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
 
       <Modal
@@ -919,6 +1077,46 @@ export function LogsPage() {
         }
       >
         {requestLogId ? t('logs.request_log_download_confirm', { id: requestLogId }) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(detailedLogPreview)}
+        onClose={closeDetailedLogPreview}
+        title={
+          detailedLogPreview
+            ? t('logs.detailed_logs_preview_title', { name: detailedLogPreview.name })
+            : t('logs.detailed_logs_preview_title_fallback')
+        }
+        width={900}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={closeDetailedLogPreview}
+              disabled={detailedLogPreviewLoading}
+            >
+              {t('common.close')}
+            </Button>
+            <Button
+              onClick={() => {
+                if (detailedLogPreview) {
+                  void downloadDetailedLog(detailedLogPreview.name);
+                }
+              }}
+              disabled={!detailedLogPreview || detailedLogPreviewLoading}
+            >
+              {t('logs.detailed_logs_download')}
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.logPanel}>
+          {detailedLogPreviewLoading ? (
+            <div className="hint">{t('common.loading')}</div>
+          ) : (
+            <pre className={styles.rawLog}>{detailedLogPreview?.content ?? ''}</pre>
+          )}
+        </div>
       </Modal>
     </div>
   );
