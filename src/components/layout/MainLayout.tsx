@@ -384,6 +384,11 @@ export function MainLayout() {
     });
   }, [fetchConfig]);
 
+  const detailedRequestLogEnabled = Boolean(
+    config?.raw?.['detailed-request-log'] ?? config?.raw?.detailedRequestLog ?? false
+  );
+  const shouldShowLogsNav = Boolean(config?.loggingToFile || detailedRequestLogEnabled);
+
   const navItems = [
     { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
@@ -391,7 +396,7 @@ export function MainLayout() {
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
-    ...(config?.loggingToFile
+    ...(shouldShowLogsNav
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),
     { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },

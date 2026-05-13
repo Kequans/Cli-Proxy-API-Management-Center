@@ -1130,7 +1130,11 @@
           "commercial_mode_desc": "停用高開銷中介軟體以支援高並行",
           "logging_to_file": "寫入記錄檔",
           "logging_to_file_desc": "將記錄儲存到檔案",
-          "logs_max_size": "記錄檔大小限制（MB）"
+          "detailed_request_log": "詳細請求記錄",
+          "detailed_request_log_desc": "保存每次請求的詳細內容，便於合規分析與稽核",
+          "logs_max_size": "記錄檔大小限制（MB）",
+          "detailed_logs_max_files": "詳細記錄保留條數",
+          "detailed_logs_max_files_hint": "固定選項：50 / 100 / 500 / 1000"
         },
         "network": {
           "title": "網路設定",

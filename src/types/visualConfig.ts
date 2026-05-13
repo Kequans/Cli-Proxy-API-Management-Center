@@ -66,7 +66,9 @@ export type VisualConfigValues = {
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
+  detailedRequestLog: boolean;
   logsMaxTotalSizeMb: string;
+  detailedLogsMaxFiles: string;
   proxyUrl: string;
   forceModelPrefix: boolean;
   requestRetry: string;
@@ -107,7 +109,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   debug: false,
   commercialMode: false,
   loggingToFile: false,
+  detailedRequestLog: false,
   logsMaxTotalSizeMb: '',
+  detailedLogsMaxFiles: '100',
   proxyUrl: '',
   forceModelPrefix: false,
   requestRetry: '',

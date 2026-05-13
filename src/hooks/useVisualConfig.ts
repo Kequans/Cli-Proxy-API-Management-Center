@@ -608,10 +608,22 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'loggingToFile')) {
     updateDirty('loggingToFile', nextValues.loggingToFile === baselineValues.loggingToFile);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'detailedRequestLog')) {
+    updateDirty(
+      'detailedRequestLog',
+      nextValues.detailedRequestLog === baselineValues.detailedRequestLog
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'logsMaxTotalSizeMb')) {
     updateDirty(
       'logsMaxTotalSizeMb',
       nextValues.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'detailedLogsMaxFiles')) {
+    updateDirty(
+      'detailedLogsMaxFiles',
+      nextValues.detailedLogsMaxFiles === baselineValues.detailedLogsMaxFiles
     );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'proxyUrl')) {
@@ -839,7 +851,9 @@ export function useVisualConfig() {
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
         loggingToFile: Boolean(parsed['logging-to-file']),
+        detailedRequestLog: Boolean(parsed['detailed-request-log']),
         logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
+        detailedLogsMaxFiles: String(parsed['detailed-logs-max-files'] ?? '100'),
 
         proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
         forceModelPrefix: Boolean(parsed['force-model-prefix']),
@@ -953,7 +967,9 @@ export function useVisualConfig() {
 
         setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
         setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
+        setBooleanInDoc(doc, ['detailed-request-log'], values.detailedRequestLog);
         setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
+        setIntFromStringInDoc(doc, ['detailed-logs-max-files'], values.detailedLogsMaxFiles);
 
         setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
         setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);

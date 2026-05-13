@@ -185,6 +185,8 @@ export function VisualConfigEditor({
   const shouldRenderFloatingSidebar = !isMobile && isFloatingSidebar && isCurrentLayer;
   const routingStrategyLabelId = useId();
   const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
+  const detailedLogsMaxFilesLabelId = useId();
+  const detailedLogsMaxFilesHintId = `${detailedLogsMaxFilesLabelId}-hint`;
   const keepaliveInputId = useId();
   const keepaliveHintId = `${keepaliveInputId}-hint`;
   const keepaliveErrorId = `${keepaliveInputId}-error`;
@@ -789,6 +791,13 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(loggingToFile) => onChange({ loggingToFile })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.detailed_request_log')}
+                  description={t('config_management.visual.sections.system.detailed_request_log_desc')}
+                  checked={values.detailedRequestLog}
+                  disabled={disabled}
+                  onChange={(detailedRequestLog) => onChange({ detailedRequestLog })}
+                />
               </SectionGrid>
 
               <SectionGrid>
@@ -801,6 +810,27 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   error={logsMaxSizeError}
                 />
+                <FieldShell
+                  label={t('config_management.visual.sections.system.detailed_logs_max_files')}
+                  labelId={detailedLogsMaxFilesLabelId}
+                  hint={t('config_management.visual.sections.system.detailed_logs_max_files_hint')}
+                  hintId={detailedLogsMaxFilesHintId}
+                >
+                  <Select
+                    value={values.detailedLogsMaxFiles}
+                    options={[
+                      { value: '50', label: '50' },
+                      { value: '100', label: '100' },
+                      { value: '500', label: '500' },
+                      { value: '1000', label: '1000' },
+                    ]}
+                    id={`${detailedLogsMaxFilesLabelId}-select`}
+                    disabled={disabled}
+                    ariaLabelledBy={detailedLogsMaxFilesLabelId}
+                    ariaDescribedBy={detailedLogsMaxFilesHintId}
+                    onChange={(detailedLogsMaxFiles) => onChange({ detailedLogsMaxFiles })}
+                  />
+                </FieldShell>
               </SectionGrid>
             </SectionStack>
           </ConfigSection>

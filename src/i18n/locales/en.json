@@ -1104,7 +1104,11 @@
           "commercial_mode_desc": "Disable high-overhead middleware to support high concurrency",
           "logging_to_file": "Log to File",
           "logging_to_file_desc": "Save logs to files",
-          "logs_max_size": "Log File Size Limit (MB)"
+          "detailed_request_log": "Detailed Request Log",
+          "detailed_request_log_desc": "Store detailed content for every request for compliance analysis and audit",
+          "logs_max_size": "Log File Size Limit (MB)",
+          "detailed_logs_max_files": "Detailed Log Retention Count",
+          "detailed_logs_max_files_hint": "Fixed options: 50 / 100 / 500 / 1000"
         },
         "network": {
           "title": "Network Configuration",

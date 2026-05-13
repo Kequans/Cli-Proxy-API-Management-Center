@@ -1104,7 +1104,11 @@
           "commercial_mode_desc": "禁用高开销中间件以支持高并发",
           "logging_to_file": "写入日志文件",
           "logging_to_file_desc": "将日志保存到文件",
-          "logs_max_size": "日志文件大小限制 (MB)"
+          "detailed_request_log": "详细请求日志",
+          "detailed_request_log_desc": "保存每次请求的详细内容，便于合规分析与审计",
+          "logs_max_size": "日志文件大小限制 (MB)",
+          "detailed_logs_max_files": "详细日志保留条数",
+          "detailed_logs_max_files_hint": "固定选项：50 / 100 / 500 / 1000"
         },
         "network": {
           "title": "网络配置",
